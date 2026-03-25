@@ -1,11 +1,14 @@
 import argparse
 import os
 from time import time
-
 import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+from torch.utils.data import DataLoader
+from Dataset import NCFDataset
 
 
 #################### Arguments ####################
@@ -21,8 +24,6 @@ def parse_args():
     parser.add_argument('--num_neg', type=int, default=4,
                         help='Number of negative instances to pair with a positive instance.')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate.')
-    parser.add_argument('--learner', nargs='?', default='adam',
-                        help='Specify an optimizer: adagrad, adam, rmsprop, sgd')
     parser.add_argument('--out', type=int, default=1,
                         help='Whether to save the trained model.')
     return parser.parse_args()
@@ -73,25 +74,77 @@ def get_model(num_users, num_items, layers=[20, 10], reg_layers=[0, 0]):
     return model
 
 
-def get_train_instances(train, all_user_items, num_items, num_negatives):
-    user_input, item_input, labels = [], [], []
-
-    for (u, i) in train:
-        user_input.append(u)
-        item_input.append(i)
-        labels.append(1)
-
-        for _ in range(num_negatives):
-            j = np.random.randint(num_items)
-            while j in all_user_items[u]:
-                j = np.random.randint(num_items)
-
-            user_input.append(u)
-            item_input.append(j)
-            labels.append(0)
-
-    return user_input, item_input, labels
-
-
 if __name__ == '__main__':
-   pass
+    args = parse_args()
+
+    # -----------------------------
+    # Load dataset
+    # -----------------------------
+    data_path = os.path.join(args.path, "ratings.dat")
+
+    dataset = NCFDataset(
+        path=data_path,
+        num_neg=args.num_neg,
+        threshold=4
+    )
+
+    train_loader = DataLoader(
+        dataset,
+        batch_size=args.batch_size,
+        shuffle=True
+    )
+
+    num_users = dataset.num_users
+    num_items = dataset.num_items
+
+    # -----------------------------
+    # Build model
+    # -----------------------------
+    layers = eval(args.layers)
+    reg_layers = eval(args.reg_layers)
+
+    model = get_model(num_users, num_items, layers, reg_layers)
+
+    # -----------------------------
+    # Optimizer
+    # -----------------------------
+
+    # Assignment requires ADAM optimizer with BCE loss.
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    loss_function = nn.BCELoss()
+
+    # -----------------------------
+    # Training loop
+    # -----------------------------
+    for epoch in range(args.epochs):
+
+        dataset.resample_negatives() # Don't forget to resample negatives every epoch for more variety!
+
+        train_loader = DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            shuffle=True
+        )
+
+        model.train()
+        total_loss = 0
+        start = time()
+
+        for user, item, label in train_loader:
+
+            prediction = model(user, item)
+
+            loss = loss_function(prediction, label)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.item()
+
+        print(
+            "Epoch %d [%.1fs]: loss = %.4f"
+            % (epoch, time() - start, total_loss)
+        )
+    
+    # TODO: Evaluation and/or model saving
