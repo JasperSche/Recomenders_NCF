@@ -78,7 +78,7 @@ class GMF(nn.Module):
         predict_vec = torch.mul(user_latent,item_latent)
         prediction = self.pred_layer(predict_vec)
 
-        output = F.softmax(prediction,dim=1)
+        output = F.sigmoid(prediction)
         return output.view(-1)
     
 #TODO: Test instance

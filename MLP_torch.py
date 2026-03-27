@@ -9,6 +9,7 @@ import torch.optim as optim
 
 from torch.utils.data import DataLoader
 from Dataset import NCFDataset
+import torch.nn.functional as F
 
 
 #################### Arguments ####################
@@ -53,8 +54,8 @@ class MLP(nn.Module):
         for idx in range(1, self.num_layer):
             vector = torch.relu(getattr(self, 'layer%d' % idx)(vector))
 
-        prediction = torch.sigmoid(self.prediction(vector))
-        return prediction.view(-1)
+        prediction = F.sigmoid(self.prediction(vector))
+        return prediction.view(-1) 
 
 
 def get_model(num_users, num_items, layers=[20, 10], reg_layers=[0, 0]):
