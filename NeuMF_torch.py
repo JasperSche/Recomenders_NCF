@@ -40,10 +40,10 @@ def parse_args():
                         help='Learning rate.')
     parser.add_argument('--learner', nargs='?', default='adam',
                         help='Specify an optimizer: adagrad, adam, rmsprop, sgd')
-    parser.add_argument('--verbose', type=int, default=1,
-                        help='Show performance per X iterations')
     parser.add_argument('--out', type=int, default=1,
                         help='Whether to save the trained model.')
+    parser.add_argument('--out_path', nargs='?', default='Models/',
+                        help='Input output path for the trained model.')
     parser.add_argument('--mf_pretrain', nargs='?', default='',
                         help='Specify the pretrain model file for MF part. If empty, no pretrain will be used')
     parser.add_argument('--mlp_pretrain', nargs='?', default='',
@@ -53,7 +53,7 @@ def parse_args():
 
 class NeuMF(nn.Module):
     def __init__(self, num_users, num_items, mf_dim=10, layers=[10], reg_layers=[0], reg_mf=0):
-        super().__init__()
+        super(NeuMF,self).__init__()
         assert len(layers) == len(reg_layers)
         self.layers = layers
         self.mf_dim = mf_dim
@@ -89,7 +89,7 @@ class NeuMF(nn.Module):
         for idx in range(1, len(layers)):
             setattr(self, 'layer%d' % idx, nn.Linear(layers[idx - 1], layers[idx]))
 
-        self.pred_layer = nn.Linear(layers[-1]+mf_dim,1)
+        self.prediction = nn.Linear(layers[-1]+mf_dim,1)
 
     def forward(self, user_input, item_input):
         mf_emb_user = self.MF_Embedding_User(user_input)
@@ -103,22 +103,21 @@ class NeuMF(nn.Module):
         mlp_emb_user = nn.Flatten()(mlp_emb_user)
         mlp_emb_item = nn.Flatten()(mlp_emb_item)
 
-        mlp_vec = torch.cat([mlp_emb_user,mlp_emb_item], dim = 1)
         mf_vec = torch.mul(mf_emb_user,mf_emb_item)
+        mlp_vec = torch.cat([mlp_emb_user,mlp_emb_item], dim = 1)
 
         for idx in range(1, len(self.layers)):
-            mlp_vec = torch.relu(getattr(self, 'layer%d' % idx)(mlp_vec))
+            mlp_vec = F.relu(getattr(self, 'layer%d' % idx)(mlp_vec))
         
-
         vector = torch.cat([mlp_vec,mf_vec], dim = 1)
 
-        prediction = F.sigmoid(self.pred_layer(vector))
+        prediction = F.sigmoid(self.prediction(vector))
 
         return prediction.view(-1)
 
     def load_pretrained_model(self, gmf_model:GMF, mlp_model:MLP):
-        self.MF_Embedding_item = gmf_model.MF_embedding_item
-        self.MF_Embedding_user = gmf_model.MF_embedding_user
+        self.MF_Embedding_item = gmf_model.MF_Embedding_Item
+        self.MF_Embedding_user = gmf_model.MF_Embedding_User
 
         self.MLP_Embedding_item = mlp_model.MLP_Embedding_User
         self.MLP_Embedding_user = mlp_model.MLP_Embedding_User
@@ -127,7 +126,7 @@ class NeuMF(nn.Module):
             setattr(self, 'layer%d' % idx, getattr(mlp_model, 'layer%d' % idx))
 
         #Prediction weights
-        gmf_prediction = gmf_model.pred_layer
+        gmf_prediction = gmf_model.prediction
         mlp_predicion = mlp_model.prediction
         self.pred_layer.weight = torch.cat([gmf_prediction.weight, mlp_predicion.weight], dim = 0) #mybe mult by 0.5 since thats how they do it in the sample code but i am not sure how that makes sense yet
         self.pred_layer.bias = 0.5*(gmf_prediction.bias+mlp_predicion.bias)
@@ -141,38 +140,61 @@ if __name__ == "__main__":
     args = parse_args()
 
     data_path = join(args.path, "ratings.dat")
+    out_path = join(args.out_path, "default_NeuMF.pt")
+    epochs = args.epochs
+    batch_size = args.batch_size
+    num_factors = args.num_factors
+    layers = eval(args.layers)
+    reg_mf  = args.reg_mf
+    reg_layers = eval(args.reg_layers)
+    num_neg = args.num_neg
+    lr = args.lr
+    learner = args.learner
+    out = args.out
+    mf_pretrain  = args.mf_pretrain
+    mlp_pretrain = args.mlp_pretrain
+
 
     dataset = NCFDataset(
         path=data_path,
-        num_neg=args.num_neg,
+        num_neg=num_neg,
         threshold=4
     )
 
     train_loader = DataLoader(
         dataset,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         shuffle=True
     )
 
     num_users = dataset.num_users
     num_items = dataset.num_items
 
-    #Load Model
-    num_factors = args.num_factors
+    model = NeuMF(
+        num_items = num_items,
+        num_users = num_users,
+        layers = layers,
+        reg_layers = reg_layers,
+        reg_mf = reg_mf 
+    )
+
+    if type(mf_pretrain) == GMF and type(mlp_pretrain) == MLP:
+        model.load_pretrained_model(mf_pretrain,mlp_pretrain)
+
+    if learner == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+    else:
+        raise ValueError(f'{learner} is not implemented')
     
-
-    model = NeuMF(num_users,num_items)
-
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
     loss_function = nn.BCELoss()
 
-    for epoch in range(args.epochs):
+    for epoch in range(epochs):
 
         dataset.resample_negatives() # Don't forget to resample negatives every epoch for more variety!
 
         train_loader = DataLoader(
             dataset,
-            batch_size=args.batch_size,
+            batch_size=batch_size,
             shuffle=True
         )
 
@@ -193,6 +215,8 @@ if __name__ == "__main__":
 
         print(
             "Epoch %d [%.1fs]: loss = %.4f"
-            % (epoch, time() - start, total_loss)
+            % (epoch+1, time() - start, total_loss)
         )
+    
+    if out == 1: torch.save(model.state_dict(),out_path)
 

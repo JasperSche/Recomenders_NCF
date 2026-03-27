@@ -6,10 +6,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.init as init
+import torch.nn.functional as F
 
 from torch.utils.data import DataLoader
 from Dataset import NCFDataset
-import torch.nn.functional as F
 
 
 #################### Arguments ####################
@@ -40,10 +41,17 @@ class MLP(nn.Module):
         self.MLP_Embedding_User = nn.Embedding(num_users, layers[0] // 2)
         self.MLP_Embedding_Item = nn.Embedding(num_items, layers[0] // 2)
 
+        init.normal_(self.MLP_Embedding_User.weight, std=0.01)
+        init.normal_(self.MLP_Embedding_Item.weight, std=0.01)
+
         for idx in range(1, self.num_layer):
             setattr(self, 'layer%d' % idx, nn.Linear(layers[idx - 1], layers[idx]))
+            init.xavier_uniform_(getattr(self, 'layer%d' % idx).weight)
+            init.zeros_(getattr(self, 'layer%d' % idx).bias)
 
         self.prediction = nn.Linear(layers[-1], 1)
+        init.kaiming_uniform_(self.prediction.weight, a=1, nonlinearity='sigmoid')
+        init.zeros_(self.prediction.bias)
 
     def forward(self, user_input, item_input):
         user_latent = self.MLP_Embedding_User(user_input)
@@ -56,24 +64,6 @@ class MLP(nn.Module):
 
         prediction = F.sigmoid(self.prediction(vector))
         return prediction.view(-1) 
-
-
-def get_model(num_users, num_items, layers=[20, 10], reg_layers=[0, 0]):
-    model = MLP(num_users, num_items, layers, reg_layers)
-
-    nn.init.normal_(model.MLP_Embedding_User.weight, std=0.01)
-    nn.init.normal_(model.MLP_Embedding_Item.weight, std=0.01)
-
-    for idx in range(1, len(layers)):
-        layer = getattr(model, 'layer%d' % idx)
-        nn.init.xavier_uniform_(layer.weight)
-        nn.init.zeros_(layer.bias)
-
-    nn.init.kaiming_uniform_(model.prediction.weight, a=1, nonlinearity='sigmoid')
-    nn.init.zeros_(model.prediction.bias)
-
-    return model
-
 
 if __name__ == '__main__':
     args = parse_args()
@@ -104,7 +94,7 @@ if __name__ == '__main__':
     layers = eval(args.layers)
     reg_layers = eval(args.reg_layers)
 
-    model = get_model(num_users, num_items, layers, reg_layers)
+    model = MLP(num_users, num_items, layers, reg_layers)
 
     # -----------------------------
     # Optimizer

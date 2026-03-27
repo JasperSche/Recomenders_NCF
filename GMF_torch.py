@@ -51,35 +51,34 @@ def lecun_uniform(tensor):
 class GMF(nn.Module):
     def __init__(self, num_users, num_items, latent_dim, regs=[2,2]):
         super().__init__()
-        self.MF_embedding_user =nn.Embedding(
+        self.MF_Embedding_User =nn.Embedding(
             num_embeddings=num_users,
             embedding_dim=latent_dim,
             norm_type=regs[0]
         )
-        self.MF_embedding_item = nn.Embedding(
+        self.MF_Embedding_Item = nn.Embedding(
             num_embeddings=num_items,
             embedding_dim=latent_dim,
             norm_type=regs[1]
         )
 
-        init.normal_(self.MF_embedding_user.weight)
-        init.normal_(self.MF_embedding_item.weight)
+        init.normal_(self.MF_Embedding_User.weight)
+        init.normal_(self.MF_Embedding_Item.weight)
 
-        self.pred_layer = nn.Linear(latent_dim,1)
+        self.prediction = nn.Linear(latent_dim,1)
         lecun_uniform(self.pred_layer.weight)
 
     def forward(self, u_input, i_input):
-        emb_user = self.MF_embedding_user(u_input)
-        emb_item = self.MF_embedding_item(i_input)
+        emb_user = self.MF_Embedding_Item(u_input)
+        emb_item = self.MF_Embedding_Item(i_input)
 
         user_latent = nn.Flatten()(emb_user)
         item_latent = nn.Flatten()(emb_item)
 
         predict_vec = torch.mul(user_latent,item_latent)
-        prediction = self.pred_layer(predict_vec)
-
-        output = F.sigmoid(prediction)
-        return output.view(-1)
+        
+        prediction = F.sigmoid(self.prediction(predict_vec))
+        return prediction.view(-1)
     
 #TODO: Test instance
 if __name__ == "__main__":
