@@ -56,7 +56,6 @@ class NeuMF(nn.Module):
         super(NeuMF,self).__init__()
         assert len(layers) == len(reg_layers)
         self.layers = layers
-        self.mf_dim = mf_dim
     
         self.MF_Embedding_User = nn.Embedding(
             num_embeddings = num_users,
@@ -128,8 +127,8 @@ class NeuMF(nn.Module):
         #Prediction weights
         gmf_prediction = gmf_model.prediction
         mlp_predicion = mlp_model.prediction
-        self.pred_layer.weight = torch.cat([gmf_prediction.weight, mlp_predicion.weight], dim = 0) #mybe mult by 0.5 since thats how they do it in the sample code but i am not sure how that makes sense yet
-        self.pred_layer.bias = 0.5*(gmf_prediction.bias+mlp_predicion.bias)
+        self.prediction.weight = nn.Parameter(torch.cat([gmf_prediction.weight, mlp_predicion.weight], dim = 1)) #mybe mult by 0.5 since thats how they do it in the sample code but i am not sure how that makes sense yet
+        self.prediction.bias = nn.Parameter(0.5*(gmf_prediction.bias+mlp_predicion.bias))
 
 
 

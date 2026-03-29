@@ -50,7 +50,7 @@ def lecun_uniform(tensor):
 
 class GMF(nn.Module):
     def __init__(self, num_users, num_items, latent_dim, regs=[2,2]):
-        super().__init__()
+        super(GMF, self).__init__()
         self.MF_Embedding_User =nn.Embedding(
             num_embeddings=num_users,
             embedding_dim=latent_dim,
@@ -66,10 +66,10 @@ class GMF(nn.Module):
         init.normal_(self.MF_Embedding_Item.weight)
 
         self.prediction = nn.Linear(latent_dim,1)
-        lecun_uniform(self.pred_layer.weight)
+        lecun_uniform(self.prediction.weight)
 
     def forward(self, u_input, i_input):
-        emb_user = self.MF_Embedding_Item(u_input)
+        emb_user = self.MF_Embedding_User(u_input)
         emb_item = self.MF_Embedding_Item(i_input)
 
         user_latent = nn.Flatten()(emb_user)
@@ -103,7 +103,6 @@ if __name__ == "__main__":
 
     #Load Model
     num_factors = args.num_factors
-    regs = eval(args.regs)
 
     model = GMF(num_users,num_items,num_factors)
 
