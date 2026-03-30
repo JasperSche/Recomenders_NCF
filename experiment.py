@@ -88,8 +88,6 @@ model_NeuMF = NeuMF(
 ).to(device)
 
 print(f'Running experiment on {device} device:')
-print(f'Model Size {sum(p.numel() for p in model_gmf.parameters())}:')
-
 train(
     model = model_gmf,
     epochs = epochs,
@@ -99,14 +97,14 @@ train(
     device = device
 )
 
-#safe
+# safe
 torch.save(model_gmf.state_dict(), 'Models/gmf.pt')
 
 train(
     model = model_mlp,
     epochs = epochs,
     batch_size = batch_size,
-    optim = optim.Adam(model_gmf.parameters(), lr=lr),
+    optim = optim.Adam(model_mlp.parameters(), lr=lr),
     loss_func = nn.BCELoss(),
     device = device
 )
@@ -125,7 +123,7 @@ train(
     model = model_NeuMF,
     epochs = epochs,
     batch_size = batch_size,
-    optim = optim.Adam(model_gmf.parameters(), lr=lr),
+    optim = optim.Adam(model_NeuMF.parameters(), lr=lr),
     loss_func = nn.BCELoss(),
     device = device
 )
