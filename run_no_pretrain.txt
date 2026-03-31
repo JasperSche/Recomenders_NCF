@@ -1,4 +1,11 @@
-NeuMF run without pretraining
+NeuMF run without pretraining:
+num_neg = 4
+epochs = 50
+batch_size = 256
+lr = 0.001
+latent_dim = 10
+mlp_layers = [64,32,16,8]
+mlp_reg_layers = [0,0,0,0]
 
 Running experiment on cuda device:
 Epoch 1 [58.840]:
