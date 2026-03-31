@@ -1,0 +1,53 @@
+NeuMF run without pretraining
+
+Running experiment on cuda device:
+Epoch 1 [58.840]:
+train loss = 0.351150, val loss = 0.179794
+Epoch 2 [58.304]:
+train loss = 0.324897, val loss = 0.178080
+Epoch 3 [57.879]:
+train loss = 0.320489, val loss = 0.178783
+Epoch 4 [56.607]:
+train loss = 0.318516, val loss = 0.177823
+Epoch 5 [57.839]:
+train loss = 0.316863, val loss = 0.182322
+Epoch 6 [57.945]:
+train loss = 0.313741, val loss = 0.179568
+Epoch 7 [57.991]:
+train loss = 0.308935, val loss = 0.168098
+Epoch 8 [58.111]:
+train loss = 0.301339, val loss = 0.164014
+Epoch 9 [57.875]:
+train loss = 0.292804, val loss = 0.164478
+Epoch 10 [58.013]:
+train loss = 0.283379, val loss = 0.159468
+Epoch 11 [58.013]:
+train loss = 0.274961, val loss = 0.158962
+Epoch 12 [58.027]:
+train loss = 0.267733, val loss = 0.157331
+Epoch 13 [58.083]:
+train loss = 0.260605, val loss = 0.154837
+Epoch 14 [58.217]:
+train loss = 0.254855, val loss = 0.150255
+Epoch 15 [58.228]:
+train loss = 0.249167, val loss = 0.152149
+Epoch 16 [58.714]:
+train loss = 0.244463, val loss = 0.143186
+Epoch 17 [58.214]:
+train loss = 0.240394, val loss = 0.148397
+Epoch 18 [58.152]:
+train loss = 0.236388, val loss = 0.137300
+Epoch 19 [56.281]:
+train loss = 0.232950, val loss = 0.125780
+Epoch 20 [57.383]:
+train loss = 0.229776, val loss = 0.136384
+Epoch 21 [57.833]:
+train loss = 0.226869, val loss = 0.144067
+Epoch 22 [57.952]:
+train loss = 0.224615, val loss = 0.131499
+Epoch 23 [57.813]:
+train loss = 0.222332, val loss = 0.145456
+Epoch 24 [57.894]:
+train loss = 0.220007, val loss = 0.138010
+Early stopping triggered.
+NeuMF: {'Recall@10': 0.11502398952893815, 'NDCG@10': 0.1715014065430494, 'num_eval_users': 6038}

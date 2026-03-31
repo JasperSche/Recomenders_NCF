@@ -13,6 +13,9 @@ from NeuMF_torch import NeuMF
 import numpy as np
 import random
 import copy
+import math
+
+model_dir = 'Models/' # Directory to save trained models
 
 num_neg = 4
 epochs = 50
@@ -138,66 +141,137 @@ def compute_validation_loss(model, dataset, device, num_val_neg=100):
 
     return total_loss / total_count
 
-model_gmf = GMF(
-    num_users = num_users,
-    num_items = num_items,
-    latent_dim = latent_dim
-).to(device)
+@torch.no_grad()
+def evaluate_ranking(model, dataset, device, split="test", k=10):
+    model.eval()
 
-model_mlp = MLP(
-    num_users = num_users, 
-    num_items = num_items, 
-    layers = mlp_layers,
-    reg_layers = mlp_reg_layers
-).to(device)
+    if split == "test":
+        ground_truth = dataset.test_ground_truth
+    else:
+        ground_truth = dataset.val_ground_truth
 
-model_NeuMF = NeuMF(
-    num_users = num_users,
-    num_items = num_items,
-    mf_dim = latent_dim,
-    layers = mlp_layers,
-    reg_layers= mlp_reg_layers,
-).to(device)
+    recalls = []
+    ndcgs = []
 
-print(f'Running experiment on {device} device:')
-train(
-    model = model_gmf,
-    epochs = epochs,
-    batch_size = batch_size,
-    optim = optim.Adam(model_gmf.parameters(), lr=lr),
-    loss_func = nn.BCELoss(),
-    device = device
-)
+    all_items = torch.arange(dataset.num_items, device=device)
 
-# safe
-torch.save(model_gmf.state_dict(), 'Models/gmf.pt')
+    for user in range(dataset.num_users):
+        ground_truth_items = ground_truth[user]
+        if len(ground_truth_items) == 0:
+            continue
 
-train(
-    model = model_mlp,
-    epochs = epochs,
-    batch_size = batch_size,
-    optim = optim.Adam(model_mlp.parameters(), lr=lr),
-    loss_func = nn.BCELoss(),
-    device = device
-)
+        train_items = dataset.train_matrix[user]
 
-torch.save(model_mlp.state_dict(), 'Models/mlp.pt')
+        # score all items
+        user_tensor = torch.full((dataset.num_items,), user, device=device)
+        scores = model(user_tensor, all_items).clone()
+
+        # exclude train items
+        if len(train_items) > 0:
+            train_idx = torch.tensor(list(train_items), device=device)
+            scores[train_idx] = -np.inf
+
+        # top-k ranked items
+        _, topk_idx = torch.topk(scores, k)
+        topk_items = topk_idx.tolist()
+
+        # recall
+        hits = [1 if item in ground_truth_items else 0 for item in topk_items]
+        num_hits = sum(hits)
+        recall = num_hits / len(ground_truth_items)
+        recalls.append(recall)
+
+        # NDCG
+        dcg = 0.0
+        for rank, hit in enumerate(hits):
+            if hit:
+                dcg += 1.0 / math.log2(rank + 2)
+
+        ideal_hits = min(len(ground_truth_items), k)
+        idcg = sum(1.0 / math.log2(i + 2) for i in range(ideal_hits))
+        ndcg = dcg / idcg if idcg > 0 else 0.0
+        ndcgs.append(ndcg)
+
+    return {
+        f"Recall@{k}": sum(recalls) / len(recalls) if recalls else 0.0,
+        f"NDCG@{k}": sum(ndcgs) / len(ndcgs) if ndcgs else 0.0,
+        "num_eval_users": len(recalls)
+    }
 
 
-model_NeuMF.load_pretrained_model(
-    gmf_model=model_gmf,
-    mlp_model=model_mlp,
-)
+if __name__ == "__main__":
+    model_gmf = GMF(
+        num_users = num_users,
+        num_items = num_items,
+        latent_dim = latent_dim
+    ).to(device)
 
-# post_train
- 
-train(
-    model = model_NeuMF,
-    epochs = epochs,
-    batch_size = batch_size,
-    optim = optim.Adam(model_NeuMF.parameters(), lr=lr),
-    loss_func = nn.BCELoss(),
-    device = device
-)
+    model_mlp = MLP(
+        num_users = num_users, 
+        num_items = num_items, 
+        layers = mlp_layers,
+        reg_layers = mlp_reg_layers
+    ).to(device)
 
-torch.save(model_NeuMF.state_dict(), 'Models/neu_mf.pt')
+    model_NeuMF = NeuMF(
+        num_users = num_users,
+        num_items = num_items,
+        mf_dim = latent_dim,
+        layers = mlp_layers,
+        reg_layers= mlp_reg_layers,
+    ).to(device)
+
+    print(f'Running experiment on {device} device:')
+
+    # Pretrain GMF and MLP separately:
+
+    # GMF
+    print("Pretraining GMF...")
+    train(
+        model = model_gmf,
+        epochs = epochs,
+        batch_size = batch_size,
+        optim = optim.Adam(model_gmf.parameters(), lr=lr),
+        loss_func = nn.BCELoss(),
+        device = device
+    )
+    torch.save(model_gmf.state_dict(), model_dir+'gmf.pt')
+
+    gmf_results = evaluate_ranking(model_gmf, dataset, device, split="test", k=10)
+    print("GMF:", gmf_results)
+
+    # MLP
+    print("Pretraining MLP...")
+    train(
+        model = model_mlp,
+        epochs = epochs,
+        batch_size = batch_size,
+        optim = optim.Adam(model_mlp.parameters(), lr=lr),
+        loss_func = nn.BCELoss(),
+        device = device
+    )
+    torch.save(model_mlp.state_dict(), model_dir+'mlp.pt')
+
+    mlp_results = evaluate_ranking(model_mlp, dataset, device, split="test", k=10)
+    print("MLP:", mlp_results)
+
+    # Load pretrained GMF and MLP into NeuMF:
+    model_NeuMF.load_pretrained_model(
+        gmf_model=model_gmf,
+        mlp_model=model_mlp,
+    )
+
+    # Train NeuMF
+    print("Training NeuMF...")
+    train(
+        model = model_NeuMF,
+        epochs = epochs,
+        batch_size = batch_size,
+        optim = optim.Adam(model_NeuMF.parameters(), lr=lr),
+        loss_func = nn.BCELoss(),
+        device = device,
+        patience = 5
+    )
+
+    neumf_results = evaluate_ranking(model_NeuMF, dataset, device, split="test", k=10)
+    print("NeuMF:", neumf_results)
