@@ -115,20 +115,20 @@ class NeuMF(nn.Module):
         return prediction.view(-1)
 
     def load_pretrained_model(self, gmf_model:GMF, mlp_model:MLP):
-        self.MF_Embedding_item = gmf_model.MF_Embedding_Item
-        self.MF_Embedding_user = gmf_model.MF_Embedding_User
+        self.MF_Embedding_Item = gmf_model.MF_Embedding_Item
+        self.MF_Embedding_User = gmf_model.MF_Embedding_User
 
-        self.MLP_Embedding_item = mlp_model.MLP_Embedding_User
-        self.MLP_Embedding_user = mlp_model.MLP_Embedding_User
+        self.MLP_Embedding_Item = mlp_model.MLP_Embedding_Item
+        self.MLP_Embedding_User = mlp_model.MLP_Embedding_User
 
         for idx in range(1, len(self.layers)):
             setattr(self, 'layer%d' % idx, getattr(mlp_model, 'layer%d' % idx))
 
         #Prediction weights
         gmf_prediction = gmf_model.prediction
-        mlp_predicion = mlp_model.prediction
-        self.prediction.weight = nn.Parameter(torch.cat([gmf_prediction.weight, mlp_predicion.weight], dim = 1)) #mybe mult by 0.5 since thats how they do it in the sample code but i am not sure how that makes sense yet
-        self.prediction.bias = nn.Parameter(0.5*(gmf_prediction.bias+mlp_predicion.bias))
+        mlp_prediction = mlp_model.prediction
+        self.prediction.weight = nn.Parameter(torch.cat([gmf_prediction.weight, mlp_prediction.weight], dim = 1)) #mybe mult by 0.5 since thats how they do it in the sample code but i am not sure how that makes sense yet
+        self.prediction.bias = nn.Parameter(0.5*(gmf_prediction.bias+mlp_prediction.bias))
 
 
 
