@@ -1,0 +1,21 @@
+{
+  "group": "negative_sampling_ratio",
+  "run_name": "numneg_4",
+  "mlp_layers": [
+    64,
+    32,
+    16,
+    8
+  ],
+  "mlp_reg_layers": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "pretraining": "both",
+  "pretrain_lr": 0.001,
+  "finetune_lr": 0.001,
+  "latent_dim": 8,
+  "num_neg": 4
+}

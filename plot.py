@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 # =========================================================
@@ -11,12 +12,12 @@ import matplotlib.pyplot as plt
 results_dir = "comparison_results"
 
 groups_to_plot = [
-    "mlp_architecture",
-    "pretraining_ablation",
-    "learning_rate",
-    "finetune_learning_rate",
-    "latent_dimension",
-    "negative_sampling_ratio",
+    "MLP Architecture",
+    "Pretraining Branches",
+    "Learning Rate",
+    "Finetune LR",
+    "GMF latent dimension",
+    "Negative Sampling Ratio",
 ]
 
 plot_train_loss_in_full_curve = True
@@ -68,6 +69,11 @@ for group in groups_to_plot:
         plt.xlabel("Training step across all stages")
         plt.ylabel("Loss")
         plt.title(run_name)
+
+        ax = plt.gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(run_dir, "full_training_curve.png"))
@@ -90,6 +96,8 @@ for group in groups_to_plot:
     plt.xlabel("Epoch")
     plt.ylabel("Validation loss")
     plt.title(group)
+    ax = plt.gca()
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(group_dir, "group_comparison_val_loss.png"))
