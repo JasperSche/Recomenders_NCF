@@ -1,0 +1,11 @@
+{
+  "Recall@10": 0.1403931339973741,
+  "NDCG@10": 0.20181676513605487,
+  "num_eval_users": 6038,
+  "gmf_best_val": 0.1401789125496245,
+  "gmf_best_epoch": 36,
+  "mlp_best_val": 0.13375205435157822,
+  "mlp_best_epoch": 15,
+  "neumf_best_val": 0.12808627167272998,
+  "neumf_best_epoch": 11
+}
