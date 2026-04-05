@@ -15,7 +15,7 @@
   ],
   "pretraining": "both",
   "pretrain_lr": 0.001,
-  "finetune_lr": 5e-05,
+  "finetune_lr": 0.001,
   "latent_dim": 16,
   "num_neg": 4
 }

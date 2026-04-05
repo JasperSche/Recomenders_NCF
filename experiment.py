@@ -19,12 +19,12 @@ import numpy as np
 
 
 data_path = "Data/ratings.dat"
-results_dir = "comparison_results"
+results_dir = "comparison_results_fixedVal"
 
 groups_to_run = [
-    # "mlp_architecture",
+    "mlp_architecture",
     "pretraining_ablation",
-    # "learning_rate",
+    "learning_rate",
     "finetune_learning_rate",
     "latent_dimension",
     "negative_sampling_ratio",
@@ -55,33 +55,33 @@ mlp_architecture_values = [
     [128, 64, 32, 16],
 ]
 pretraining_values = [
-    # "none",
-    # "gmf",
-    # "mlp",
-    "both", # base
+    "none",
+    "gmf",
+    "mlp",
+    # "both", # base
 ]
 learning_rate_values = [
     0.0005,
-    0.001, # base
+    # 0.001, # base
     0.005,
 ]
 finetune_learning_rate_values = [
-    # 0.0005,
-    # 0.0001,
-    # 0.00005,
-    0.001, # base
+    0.0005,
+    0.0001,
+    0.00005,
+    # 0.001, # base
 ]
 latent_dimension_values = [
-    # 4,
-    8, # base   
-    # 16,
-    # 24,
+    4,
+    # 8, # base   
+    16,
+    24,
 ]
 negative_sampling_values = [
-    # 1,
-    4, # base
-    # 8,
-    # 12,
+    1,
+    # 4, # base
+    8,
+    12,
 ]
 
 
@@ -333,7 +333,7 @@ if __name__ == "__main__":
                 "mlp_reg_layers": base_mlp_reg_layers,
                 "pretraining": base_pretraining,
                 "pretrain_lr": base_pretrain_lr,
-                "finetune_lr": finetune_lr,
+                "finetune_lr": base_finetune_lr,
                 "latent_dim": latent_dim,
                 "num_neg": base_num_neg,
             })
@@ -347,7 +347,7 @@ if __name__ == "__main__":
                 "mlp_reg_layers": base_mlp_reg_layers,
                 "pretraining": base_pretraining,
                 "pretrain_lr": base_pretrain_lr,
-                "finetune_lr": finetune_lr,
+                "finetune_lr": base_finetune_lr,
                 "latent_dim": base_latent_dim,
                 "num_neg": num_neg,
             })
