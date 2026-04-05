@@ -1,0 +1,21 @@
+{
+  "group": "learning_rate",
+  "run_name": "lr_0p005",
+  "mlp_layers": [
+    64,
+    32,
+    16,
+    8
+  ],
+  "mlp_reg_layers": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "pretraining": "both",
+  "pretrain_lr": 0.005,
+  "finetune_lr": 0.005,
+  "latent_dim": 8,
+  "num_neg": 4
+}

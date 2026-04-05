@@ -167,6 +167,8 @@ def compute_validation_loss(model, dataset, device, num_val_neg=100):
     total_count = 0
     bce = nn.BCELoss()
 
+    rng = random.Random(dataset.seed + 12345)
+
     for user in range(dataset.num_users):
         pos_items = list(dataset.val_ground_truth[user])
         if len(pos_items) == 0:
@@ -185,7 +187,7 @@ def compute_validation_loss(model, dataset, device, num_val_neg=100):
 
             negs = set()
             while len(negs) < num_val_neg:
-                neg = random.randint(0, dataset.num_items - 1)
+                neg = rng.randint(0, dataset.num_items - 1)
                 if neg not in all_pos:
                     negs.add(neg)
 

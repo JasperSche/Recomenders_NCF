@@ -9,15 +9,15 @@ from matplotlib.ticker import MaxNLocator
 # Settings you can change directly
 # =========================================================
 
-results_dir = "comparison_results"
+results_dir = "comparison_results_fixedVal"
 
 groups_to_plot = [
-    "MLP Architecture",
-    "Pretraining Branches",
-    "Learning Rate",
-    "Finetune LR",
-    "GMF latent dimension",
-    "Negative Sampling Ratio",
+    "mlp_architecture",
+    "pretraining_ablation",
+    "learning_rate",
+    "finetune_learning_rate",
+    "latent_dimension",
+    "negative_sampling_ratio",
 ]
 
 plot_train_loss_in_full_curve = True
