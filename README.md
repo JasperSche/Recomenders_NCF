@@ -1,22 +1,34 @@
-# Recomenders_NCF
+# Neural Collaborative Filtering in PyTorch
 
-## Dataset
+This repository contains a small PyTorch implementation of three recommendation models for implicit-feedback movie recommendation:
 
-`Dataset.py` contains the `NCFDataset` class which handles loading and preprocessing of the MovieLens `ratings.dat` file.
+- **GMF** (`GMF.py`): Generalized Matrix Factorization
+- **MLP** (`MLP.py`): Multi-Layer Perceptron recommender
+- **NeuMF** (`NeuMF.py`): Hybrid model combining GMF and MLP
+- **Dataset** (`Dataset.py`): data loading, train/validation/test split, and negative sampling
+- **Experiments** (`Experiment.py`): comparison runs and hyperparameter sweeps
 
-### Preprocessing steps
+## Data
 
-1. **Implicit conversion**
-   - Ratings ≥ 4 → positive interactions
-   - Ratings < 4 → ignored
+The code expects a MovieLens-style ratings file at:
 
-2. **Train/validation/test split**
-   - Positive interactions split per user (70/15/15)
+`Data/ratings.dat`
 
-3. **Negative sampling**
-   - For each training positive, `num_neg` unseen items are sampled as negatives
-   - Used only for training! (Evaluation on val/test is full-ranking, so all movies are used with positives as ground truth)
+Each line should follow the format:
 
-4. **Evaluation setup**
-   - Validation/test store only positive items
-   - Evaluation ranks all unseen items (full-ranking)
+`user_id::item_id::rating::timestamp`
+
+Ratings are converted to implicit feedback by keeping interactions with rating **>= 4** as positive examples.
+
+## How it works
+
+- Users' positive interactions are split into **train / validation / test** sets.
+- Training uses **negative sampling**.
+- Models are trained with **binary cross-entropy loss** and **Adam**.
+- `experiment.py` supports pretraining GMF/MLP and finetuning NeuMF.
+
+## Run
+
+Run the experiment pipeline with:
+
+$ python experiment.py

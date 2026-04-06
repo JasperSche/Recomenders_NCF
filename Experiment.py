@@ -5,9 +5,9 @@ import torch.optim as optim
 from time import time
 from torch.utils.data import DataLoader
 from Dataset import NCFDataset
-from GMF_torch import GMF
-from MLP_torch import MLP
-from NeuMF_torch import NeuMF
+from GMF import GMF
+from MLP import MLP
+from NeuMF import NeuMF
 
 import os
 import csv
@@ -19,7 +19,7 @@ import numpy as np
 
 
 data_path = "Data/ratings.dat"
-results_dir = "comparison_results_fixedVal"
+results_dir = "comparison_results"
 
 groups_to_run = [
     "mlp_architecture",
@@ -41,7 +41,6 @@ k_eval = 10
 
 # Base configuration
 base_mlp_layers = [64, 32, 16, 8]
-base_mlp_reg_layers = [0, 0, 0, 0]
 base_pretrain_lr = 0.001
 base_finetune_lr = 0.001
 base_latent_dim = 8
@@ -275,7 +274,6 @@ if __name__ == "__main__":
                 "group": "mlp_architecture",
                 "run_name": "mlp_" + "-".join(str(x) for x in layers),
                 "mlp_layers": layers,
-                "mlp_reg_layers": [0] * len(layers),
                 "pretraining": base_pretraining,
                 "pretrain_lr": base_pretrain_lr,
                 "finetune_lr": base_finetune_lr,
@@ -289,7 +287,6 @@ if __name__ == "__main__":
                 "group": "pretraining_ablation",
                 "run_name": "pretrain_" + pretraining,
                 "mlp_layers": base_mlp_layers,
-                "mlp_reg_layers": base_mlp_reg_layers,
                 "pretraining": pretraining,
                 "pretrain_lr": base_pretrain_lr,
                 "finetune_lr": base_finetune_lr,
@@ -303,7 +300,6 @@ if __name__ == "__main__":
                 "group": "learning_rate",
                 "run_name": "lr_" + str(lr).replace(".", "p"),
                 "mlp_layers": base_mlp_layers,
-                "mlp_reg_layers": base_mlp_reg_layers,
                 "pretraining": base_pretraining,
                 "pretrain_lr": lr,
                 "finetune_lr": lr,
@@ -318,7 +314,6 @@ if __name__ == "__main__":
                 "run_name": "pretrainlr_" + str(base_pretrain_lr).replace(".", "p") +
                             "_finetunelr_" + str(finetune_lr).replace(".", "p"),
                 "mlp_layers": base_mlp_layers,
-                "mlp_reg_layers": base_mlp_reg_layers,
                 "pretraining": "both",
                 "pretrain_lr": base_pretrain_lr,
                 "finetune_lr": finetune_lr,
@@ -332,7 +327,6 @@ if __name__ == "__main__":
                 "group": "latent_dimension",
                 "run_name": "latent_" + str(latent_dim),
                 "mlp_layers": base_mlp_layers,
-                "mlp_reg_layers": base_mlp_reg_layers,
                 "pretraining": base_pretraining,
                 "pretrain_lr": base_pretrain_lr,
                 "finetune_lr": base_finetune_lr,
@@ -346,7 +340,6 @@ if __name__ == "__main__":
                 "group": "negative_sampling_ratio",
                 "run_name": "numneg_" + str(num_neg),
                 "mlp_layers": base_mlp_layers,
-                "mlp_reg_layers": base_mlp_reg_layers,
                 "pretraining": base_pretraining,
                 "pretrain_lr": base_pretrain_lr,
                 "finetune_lr": base_finetune_lr,
@@ -436,7 +429,6 @@ if __name__ == "__main__":
                 num_users=num_users,
                 num_items=num_items,
                 layers=config["mlp_layers"],
-                reg_layers=config["mlp_reg_layers"]
             ).to(device)
 
             model_mlp, mlp_history = train(
@@ -465,7 +457,6 @@ if __name__ == "__main__":
             num_items=num_items,
             mf_dim=config["latent_dim"],
             layers=config["mlp_layers"],
-            reg_layers=config["mlp_reg_layers"]
         ).to(device)
 
         if config["pretraining"] == "both":

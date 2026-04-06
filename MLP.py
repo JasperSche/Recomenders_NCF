@@ -1,7 +1,6 @@
 import argparse
 import os
 from time import time
-import numpy as np
 
 import torch
 import torch.nn as nn
@@ -21,21 +20,16 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=256, help='Batch size.')
     parser.add_argument('--layers', nargs='?', default='[64,32,16,8]',
                         help='Size of each layer. Note that the first layer is the concatenation of user and item embeddings. So layers[0]/2 is the embedding size.')
-    parser.add_argument('--reg_layers', nargs='?', default='[0,0,0,0]',
-                        help='Regularization for each layer.')
     parser.add_argument('--num_neg', type=int, default=4,
                         help='Number of negative instances to pair with a positive instance.')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate.')
-    parser.add_argument('--out', type=int, default=1,
-                        help='Whether to save the trained model.')
     return parser.parse_args()
 
 class MLP(nn.Module):
-    def __init__(self, num_users, num_items, layers, reg_layers):
+    def __init__(self, num_users, num_items, layers):
         super(MLP, self).__init__()
 
         self.layers = layers
-        self.reg_layers = reg_layers
         self.num_layer = len(layers)
 
         self.MLP_Embedding_User = nn.Embedding(num_users, layers[0] // 2)
@@ -92,9 +86,7 @@ if __name__ == '__main__':
     # Build model
     # -----------------------------
     layers = eval(args.layers)
-    reg_layers = eval(args.reg_layers)
-
-    model = MLP(num_users, num_items, layers, reg_layers)
+    model = MLP(num_users, num_items, layers)
 
     # -----------------------------
     # Optimizer
@@ -137,5 +129,3 @@ if __name__ == '__main__':
             "Epoch %d [%.1fs]: loss = %.4f"
             % (epoch, time() - start, total_loss)
         )
-    
-    # TODO: Evaluation and/or model saving

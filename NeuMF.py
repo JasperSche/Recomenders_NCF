@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.init as init
@@ -7,9 +6,8 @@ import torch.nn.functional as F
 
 from os.path import join
 from time import time
-from GMF_torch import GMF
-from MLP_torch import MLP
-from Dataset import Dataset
+from GMF import GMF
+from MLP import MLP
 from torch.utils.data import DataLoader
 from Dataset import NCFDataset
 
@@ -20,8 +18,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run NeuMF.")
     parser.add_argument('--path', nargs='?', default='Data/',
                         help='Input data path.')
-    parser.add_argument('--dataset', nargs='?', default='ml-1m',
-                        help='Choose a dataset.')
     parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs.')
     parser.add_argument('--batch_size', type=int, default=256,
@@ -30,31 +26,18 @@ def parse_args():
                         help='Embedding size of MF model.')
     parser.add_argument('--layers', nargs='?', default='[64,32,16,8]',
                         help="MLP layers. Note that the first layer is the concatenation of user and item embeddings. So layers[0]/2 is the embedding size.")
-    parser.add_argument('--reg_mf', type=float, default=0,
-                        help='Regularization for MF embeddings.')                    
-    parser.add_argument('--reg_layers', nargs='?', default='[0,0,0,0]',
-                        help="Regularization for each MLP layer. reg_layers[0] is the regularization for embeddings.")
     parser.add_argument('--num_neg', type=int, default=4,
                         help='Number of negative instances to pair with a positive instance.')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='Learning rate.')
-    parser.add_argument('--learner', nargs='?', default='adam',
-                        help='Specify an optimizer: adagrad, adam, rmsprop, sgd')
-    parser.add_argument('--out', type=int, default=1,
-                        help='Whether to save the trained model.')
     parser.add_argument('--out_path', nargs='?', default='Models/',
                         help='Input output path for the trained model.')
-    parser.add_argument('--mf_pretrain', nargs='?', default='',
-                        help='Specify the pretrain model file for MF part. If empty, no pretrain will be used')
-    parser.add_argument('--mlp_pretrain', nargs='?', default='',
-                        help='Specify the pretrain model file for MLP part. If empty, no pretrain will be used')
     return parser.parse_args()
 
 
 class NeuMF(nn.Module):
     def __init__(self, num_users, num_items, mf_dim=10, layers=[10], reg_layers=[0], reg_mf=0):
         super(NeuMF,self).__init__()
-        assert len(layers) == len(reg_layers)
         self.layers = layers
     
         self.MF_Embedding_User = nn.Embedding(
@@ -144,15 +127,8 @@ if __name__ == "__main__":
     batch_size = args.batch_size
     num_factors = args.num_factors
     layers = eval(args.layers)
-    reg_mf  = args.reg_mf
-    reg_layers = eval(args.reg_layers)
     num_neg = args.num_neg
     lr = args.lr
-    learner = args.learner
-    out = args.out
-    mf_pretrain  = args.mf_pretrain
-    mlp_pretrain = args.mlp_pretrain
-
 
     dataset = NCFDataset(
         path=data_path,
@@ -173,18 +149,9 @@ if __name__ == "__main__":
         num_items = num_items,
         num_users = num_users,
         layers = layers,
-        reg_layers = reg_layers,
-        reg_mf = reg_mf 
     )
 
-    if type(mf_pretrain) == GMF and type(mlp_pretrain) == MLP:
-        model.load_pretrained_model(mf_pretrain,mlp_pretrain)
-
-    if learner == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=lr)
-    else:
-        raise ValueError(f'{learner} is not implemented')
-    
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_function = nn.BCELoss()
 
     for epoch in range(epochs):
@@ -216,6 +183,3 @@ if __name__ == "__main__":
             "Epoch %d [%.1fs]: loss = %.4f"
             % (epoch+1, time() - start, total_loss)
         )
-    
-    if out == 1: torch.save(model.state_dict(),out_path)
-
